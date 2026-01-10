@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
 import { Feedback as FeedbackType } from '../types';
@@ -7,7 +6,6 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export function Feedback() {
   const { isAuthenticated, isLoading: authLoading, login } = useAuth();
-  const navigate = useNavigate();
 
   const [tmaName, setTmaName] = useState('');
   const [description, setDescription] = useState('');
