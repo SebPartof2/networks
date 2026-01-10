@@ -1,0 +1,3 @@
+# S-Auth OAuth2 Configuration
+SAUTH_CLIENT_ID=your_client_id_here
+SAUTH_CLIENT_SECRET=your_client_secret_here

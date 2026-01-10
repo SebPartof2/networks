@@ -1,0 +1,128 @@
+import { Hono } from 'hono';
+import { Env, TMA, MajorNetwork, StationWithTMA, StationWithSubstations, SubstationWithNetwork } from '../types';
+
+const app = new Hono<{ Bindings: Env }>();
+
+// Get all TMAs
+app.get('/tmas', async (c) => {
+  const tmas = await c.env.DB.prepare('SELECT * FROM tmas ORDER BY name').all<TMA>();
+  return c.json(tmas.results);
+});
+
+// Get TMA by ID
+app.get('/tmas/:id', async (c) => {
+  const id = c.req.param('id');
+  const tma = await c.env.DB.prepare('SELECT * FROM tmas WHERE id = ?').bind(id).first<TMA>();
+
+  if (!tma) {
+    return c.json({ error: 'Not Found', message: 'TMA not found' }, 404);
+  }
+
+  return c.json(tma);
+});
+
+// Get stations by TMA
+app.get('/tmas/:id/stations', async (c) => {
+  const id = c.req.param('id');
+
+  // Verify TMA exists
+  const tma = await c.env.DB.prepare('SELECT * FROM tmas WHERE id = ?').bind(id).first<TMA>();
+  if (!tma) {
+    return c.json({ error: 'Not Found', message: 'TMA not found' }, 404);
+  }
+
+  const stations = await c.env.DB.prepare(`
+    SELECT s.*, t.name as tma_name
+    FROM stations s
+    JOIN tmas t ON s.tma_id = t.id
+    WHERE s.tma_id = ?
+    ORDER BY s.station_number
+  `).bind(id).all<StationWithTMA>();
+
+  return c.json({
+    tma,
+    stations: stations.results,
+  });
+});
+
+// Search all stations
+app.get('/stations', async (c) => {
+  const query = c.req.query('q');
+  const tmaId = c.req.query('tma_id');
+
+  let sql = `
+    SELECT s.*, t.name as tma_name
+    FROM stations s
+    JOIN tmas t ON s.tma_id = t.id
+    WHERE 1=1
+  `;
+  const params: (string | number)[] = [];
+
+  if (query) {
+    sql += ` AND (
+      s.callsign LIKE ? OR
+      s.marketing_name LIKE ? OR
+      CAST(s.station_number AS TEXT) LIKE ?
+    )`;
+    const searchPattern = `%${query}%`;
+    params.push(searchPattern, searchPattern, searchPattern);
+  }
+
+  if (tmaId) {
+    sql += ` AND s.tma_id = ?`;
+    params.push(tmaId);
+  }
+
+  sql += ` ORDER BY s.station_number`;
+
+  let stmt = c.env.DB.prepare(sql);
+  if (params.length > 0) {
+    stmt = stmt.bind(...params);
+  }
+
+  const stations = await stmt.all<StationWithTMA>();
+  return c.json(stations.results);
+});
+
+// Get station by ID with substations
+app.get('/stations/:id', async (c) => {
+  const id = c.req.param('id');
+
+  const station = await c.env.DB.prepare(`
+    SELECT s.*, t.name as tma_name
+    FROM stations s
+    JOIN tmas t ON s.tma_id = t.id
+    WHERE s.id = ?
+  `).bind(id).first<StationWithTMA>();
+
+  if (!station) {
+    return c.json({ error: 'Not Found', message: 'Station not found' }, 404);
+  }
+
+  const substations = await c.env.DB.prepare(`
+    SELECT
+      sub.*,
+      mn.short_name as network_short_name,
+      mn.long_name as network_long_name,
+      mn.logo_url as network_logo_url
+    FROM substations sub
+    LEFT JOIN major_networks mn ON sub.major_network_id = mn.id
+    WHERE sub.station_id = ?
+    ORDER BY sub.number
+  `).bind(id).all<SubstationWithNetwork>();
+
+  const result: StationWithSubstations = {
+    ...station,
+    substations: substations.results,
+  };
+
+  return c.json(result);
+});
+
+// Get all major networks
+app.get('/networks', async (c) => {
+  const networks = await c.env.DB.prepare('SELECT * FROM major_networks ORDER BY short_name').all<MajorNetwork>();
+  return c.json(networks.results);
+});
+
+export default app;

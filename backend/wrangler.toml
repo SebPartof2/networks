@@ -1,0 +1,15 @@
+name = "tv-stations-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tv-stations"
+database_id = "ffd43305-ab93-44fa-9909-2265ae32d3d8"
+
+[vars]
+SAUTH_CLIENT_ID = "cli_89cd2e6ceabd8614398dd0d43277e2e5"
+FRONTEND_URL = "https://tv.sebbyk.net"
+
+# For production, set secrets using:
+# wrangler secret put SAUTH_CLIENT_SECRET
