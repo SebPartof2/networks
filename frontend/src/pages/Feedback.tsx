@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../hooks/useAuth';
-import { Feedback as FeedbackType } from '../types';
+import { Feedback as FeedbackType, TMA } from '../types';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 export function Feedback() {
   const { isAuthenticated, isLoading: authLoading, login } = useAuth();
 
-  const [tmaName, setTmaName] = useState('');
+  const [tmas, setTmas] = useState<TMA[]>([]);
+  const [selectedTmaId, setSelectedTmaId] = useState<string>('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -15,6 +16,11 @@ export function Feedback() {
 
   const [myFeedback, setMyFeedback] = useState<FeedbackType[]>([]);
   const [loadingFeedback, setLoadingFeedback] = useState(true);
+
+  // Filter to only show not_implemented TMAs
+  const notImplementedTmas = useMemo(() => {
+    return tmas.filter((tma) => tma.status === 'not_implemented');
+  }, [tmas]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -25,8 +31,11 @@ export function Feedback() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      api.getMyFeedback()
-        .then(setMyFeedback)
+      Promise.all([api.getMyFeedback(), api.getTmas()])
+        .then(([feedbackData, tmasData]) => {
+          setMyFeedback(feedbackData);
+          setTmas(tmasData);
+        })
         .catch(() => {})
         .finally(() => setLoadingFeedback(false));
     }
@@ -37,14 +46,21 @@ export function Feedback() {
     setError(null);
     setSubmitting(true);
 
+    const selectedTma = tmas.find((t) => t.id === parseInt(selectedTmaId, 10));
+    if (!selectedTma) {
+      setError('Please select a TMA');
+      setSubmitting(false);
+      return;
+    }
+
     try {
       await api.submitFeedback({
-        tma_name: tmaName,
+        tma_name: selectedTma.name,
         description: description || undefined,
       });
 
       setSuccess(true);
-      setTmaName('');
+      setSelectedTmaId('');
       setDescription('');
 
       // Refresh feedback list
@@ -83,47 +99,58 @@ export function Feedback() {
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Request TMA Data
+          Request TMA Implementation
         </h1>
         <p className="text-gray-600">
-          Submit a request to add a new Television Market Area to our database
+          Request that we add station data for a Television Market Area
         </p>
       </div>
 
       {success && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
           <p className="text-green-800">
-            Thank you! Your feedback has been submitted and will be reviewed.
+            Thank you! Your request has been submitted and will be reviewed.
           </p>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm p-6 mb-8">
         <div className="mb-4">
-          <label htmlFor="tmaName" className="block text-sm font-medium text-gray-700 mb-1">
-            TMA Name *
+          <label htmlFor="tmaSelect" className="block text-sm font-medium text-gray-700 mb-1">
+            Select a Market *
           </label>
-          <input
-            type="text"
-            id="tmaName"
-            value={tmaName}
-            onChange={(e) => setTmaName(e.target.value)}
-            required
-            placeholder="e.g., San Francisco-Oakland-San Jose"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+          {notImplementedTmas.length === 0 ? (
+            <p className="text-gray-500 text-sm py-2">
+              All markets have been implemented or are in progress!
+            </p>
+          ) : (
+            <select
+              id="tmaSelect"
+              value={selectedTmaId}
+              onChange={(e) => setSelectedTmaId(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Select a market...</option>
+              {notImplementedTmas.map((tma) => (
+                <option key={tma.id} value={tma.id}>
+                  {tma.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div className="mb-6">
           <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-            Additional Details (optional)
+            Why are you interested in this market? (optional)
           </label>
           <textarea
             id="description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            rows={4}
-            placeholder="Any additional information about this market..."
+            rows={3}
+            placeholder="Help us prioritize by sharing why you need this market..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -136,7 +163,7 @@ export function Feedback() {
 
         <button
           type="submit"
-          disabled={submitting || !tmaName.trim()}
+          disabled={submitting || !selectedTmaId || notImplementedTmas.length === 0}
           className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
         >
           {submitting ? 'Submitting...' : 'Submit Request'}
