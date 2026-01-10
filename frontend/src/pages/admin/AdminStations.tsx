@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { Station, TMA, MajorNetwork, StationWithSubstations, Substation } from '../../types';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
@@ -18,12 +19,24 @@ interface SubstationFormData {
 }
 
 export function AdminStations() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [stations, setStations] = useState<Station[]>([]);
   const [tmas, setTmas] = useState<TMA[]>([]);
   const [networks, setNetworks] = useState<MajorNetwork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filterTmaId, setFilterTmaId] = useState<string>('');
+
+  // Get filter from URL params
+  const filterTmaId = searchParams.get('tma') || '';
+
+  // Update URL when filter changes
+  const setFilterTmaId = (value: string) => {
+    if (value) {
+      setSearchParams({ tma: value });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   const [showStationModal, setShowStationModal] = useState(false);
   const [editingStation, setEditingStation] = useState<Station | null>(null);
