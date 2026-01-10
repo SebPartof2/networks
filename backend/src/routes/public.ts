@@ -125,4 +125,42 @@ app.get('/networks', async (c) => {
   return c.json(networks.results);
 });
 
+// Get network by ID with affiliates
+app.get('/networks/:id', async (c) => {
+  const id = c.req.param('id');
+
+  const network = await c.env.DB.prepare('SELECT * FROM major_networks WHERE id = ?')
+    .bind(id)
+    .first<MajorNetwork>();
+
+  if (!network) {
+    return c.json({ error: 'Not Found', message: 'Network not found' }, 404);
+  }
+
+  // Get all substations affiliated with this network, including parent station info
+  const affiliates = await c.env.DB.prepare(`
+    SELECT
+      sub.id,
+      sub.number,
+      sub.marketing_name,
+      sub.station_id,
+      s.callsign as station_callsign,
+      s.station_number,
+      s.marketing_name as station_marketing_name,
+      s.logo_url as station_logo_url,
+      s.tma_id,
+      t.name as tma_name
+    FROM substations sub
+    JOIN stations s ON sub.station_id = s.id
+    JOIN tmas t ON s.tma_id = t.id
+    WHERE sub.major_network_id = ?
+    ORDER BY t.name, s.station_number
+  `).bind(id).all();
+
+  return c.json({
+    ...network,
+    affiliates: affiliates.results,
+  });
+});
+
 export default app;

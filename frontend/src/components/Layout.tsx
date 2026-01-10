@@ -37,10 +37,18 @@ export function Layout({ children }: LayoutProps) {
                 <Link
                   to="/stations"
                   className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    isActive('/stations') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900'
+                    isActive('/stations') || location.pathname.startsWith('/stations/') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
-                  All Stations
+                  Stations
+                </Link>
+                <Link
+                  to="/networks"
+                  className={`px-3 py-2 rounded-md text-sm font-medium ${
+                    isActive('/networks') || location.pathname.startsWith('/networks/') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Networks
                 </Link>
                 {isAuthenticated && (
                   <Link

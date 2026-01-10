@@ -72,3 +72,21 @@ export interface Tokens {
   expires_in: number;
   token_type: string;
 }
+
+// Network affiliate (substation with parent station info)
+export interface NetworkAffiliate {
+  id: number;
+  number: number;
+  marketing_name: string;
+  station_id: number;
+  station_callsign: string;
+  station_number: number;
+  station_marketing_name: string;
+  station_logo_url: string | null;
+  tma_id: number;
+  tma_name: string;
+}
+
+export interface NetworkWithAffiliates extends MajorNetwork {
+  affiliates: NetworkAffiliate[];
+}

@@ -1,4 +1,4 @@
-import { TMA, TMAStatus, Station, StationWithSubstations, MajorNetwork, User, Feedback, FeedbackWithUser } from '../types';
+import { TMA, TMAStatus, Station, StationWithSubstations, MajorNetwork, NetworkWithAffiliates, User, Feedback, FeedbackWithUser } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
@@ -47,6 +47,7 @@ export const api = {
 
   // Networks
   getNetworks: () => fetchApi<MajorNetwork[]>('/api/networks'),
+  getNetwork: (id: number) => fetchApi<NetworkWithAffiliates>(`/api/networks/${id}`),
 
   // Authenticated endpoints
   getCurrentUser: () => fetchApi<User>('/api/users/me'),

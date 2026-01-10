@@ -4,6 +4,8 @@ import { Home } from './pages/Home';
 import { TMAStations } from './pages/TMAStations';
 import { Stations } from './pages/Stations';
 import { StationDetail } from './pages/StationDetail';
+import { Networks } from './pages/Networks';
+import { NetworkDetail } from './pages/NetworkDetail';
 import { Feedback } from './pages/Feedback';
 import { SSO } from './pages/SSO';
 import { Callback } from './pages/Callback';
@@ -24,6 +26,8 @@ function App() {
         <Route path="/tma/:id" element={<TMAStations />} />
         <Route path="/stations" element={<Stations />} />
         <Route path="/stations/:id" element={<StationDetail />} />
+        <Route path="/networks" element={<Networks />} />
+        <Route path="/networks/:id" element={<NetworkDetail />} />
 
         {/* Auth routes */}
         <Route path="/sso" element={<SSO />} />
