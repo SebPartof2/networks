@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { api } from '../../lib/api';
 import { Station, TMA, MajorNetwork, StationWithSubstations, Substation } from '../../types';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
@@ -23,6 +23,7 @@ export function AdminStations() {
   const [networks, setNetworks] = useState<MajorNetwork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filterTmaId, setFilterTmaId] = useState<string>('');
 
   const [showStationModal, setShowStationModal] = useState(false);
   const [editingStation, setEditingStation] = useState<Station | null>(null);
@@ -44,6 +45,12 @@ export function AdminStations() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Filter stations by selected TMA
+  const filteredStations = useMemo(() => {
+    if (!filterTmaId) return stations;
+    return stations.filter((s) => s.tma_id === parseInt(filterTmaId, 10));
+  }, [stations, filterTmaId]);
 
   useEffect(() => {
     Promise.all([
@@ -67,7 +74,7 @@ export function AdminStations() {
       station_number: '',
       marketing_name: '',
       logo_url: '',
-      tma_id: '',
+      tma_id: filterTmaId ? parseInt(filterTmaId, 10) : '',
     });
     setShowStationModal(true);
   };
@@ -224,11 +231,32 @@ export function AdminStations() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="p-4 border-b">
+          <div className="p-4 border-b space-y-3">
             <h2 className="font-semibold">Stations</h2>
+            <select
+              value={filterTmaId}
+              onChange={(e) => {
+                setFilterTmaId(e.target.value);
+                setSelectedStation(null);
+              }}
+              className="w-full px-3 py-2 border rounded-md text-sm"
+            >
+              <option value="">All Markets ({stations.length} stations)</option>
+              {tmas.map((tma) => {
+                const count = stations.filter((s) => s.tma_id === tma.id).length;
+                return (
+                  <option key={tma.id} value={tma.id}>
+                    {tma.name} ({count})
+                  </option>
+                );
+              })}
+            </select>
           </div>
           <div className="divide-y max-h-[600px] overflow-y-auto">
-            {stations.map((station) => (
+            {filteredStations.length === 0 && (
+              <p className="p-4 text-gray-500 text-center">No stations in this market</p>
+            )}
+            {filteredStations.map((station) => (
               <div
                 key={station.id}
                 className={`p-4 cursor-pointer hover:bg-gray-50 ${
