@@ -2,8 +2,27 @@ import { Context, Next } from 'hono';
 import { Env, User, SAuthUserInfo } from '../types';
 
 const SAUTH_USERINFO_URL = 'https://auth.sebbyk.net/userinfo';
+const TOKEN_CACHE_TTL = 3600; // 1 hour in seconds
 
-export async function validateToken(token: string): Promise<SAuthUserInfo | null> {
+// Simple hash function for cache key (don't store raw tokens)
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+export async function validateToken(token: string, cache: KVNamespace): Promise<SAuthUserInfo | null> {
+  const cacheKey = `token:${await hashToken(token)}`;
+
+  // Check cache first
+  const cached = await cache.get(cacheKey, 'json');
+  if (cached) {
+    return cached as SAuthUserInfo;
+  }
+
+  // Not in cache, validate with S-Auth
   try {
     const response = await fetch(SAUTH_USERINFO_URL, {
       headers: {
@@ -15,7 +34,12 @@ export async function validateToken(token: string): Promise<SAuthUserInfo | null
       return null;
     }
 
-    return await response.json();
+    const userInfo = await response.json() as SAuthUserInfo;
+
+    // Cache the result for 1 hour
+    await cache.put(cacheKey, JSON.stringify(userInfo), { expirationTtl: TOKEN_CACHE_TTL });
+
+    return userInfo;
   } catch {
     return null;
   }
@@ -29,7 +53,7 @@ export async function authMiddleware(c: Context<{ Bindings: Env; Variables: { us
   }
 
   const token = authHeader.substring(7);
-  const userInfo = await validateToken(token);
+  const userInfo = await validateToken(token, c.env.TOKEN_CACHE);
 
   if (!userInfo) {
     return c.json({ error: 'Unauthorized', message: 'Invalid or expired token' }, 401);
@@ -47,13 +71,8 @@ export async function authMiddleware(c: Context<{ Bindings: Env; Variables: { us
     `).bind(userInfo.sub, userInfo.email, userInfo.given_name, userInfo.family_name).run();
 
     user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(userInfo.sub).first<User>();
-  } else {
-    // Update user info if changed
-    await db.prepare(`
-      UPDATE users SET email = ?, given_name = ?, family_name = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).bind(userInfo.email, userInfo.given_name, userInfo.family_name, userInfo.sub).run();
   }
+  // Note: We no longer update user info on every request - only on first login
 
   c.set('user', user!);
   c.set('userInfo', userInfo);

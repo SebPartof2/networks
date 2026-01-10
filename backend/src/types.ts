@@ -1,5 +1,6 @@
 export interface Env {
   DB: D1Database;
+  TOKEN_CACHE: KVNamespace;
   SAUTH_CLIENT_ID: string;
   SAUTH_CLIENT_SECRET: string;
   FRONTEND_URL: string;
