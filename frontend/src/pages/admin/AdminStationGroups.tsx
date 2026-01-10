@@ -10,7 +10,7 @@ interface GroupFormData {
 }
 
 interface SubstationFormData {
-  number: number;
+  number: number | '';
   marketing_name: string;
   major_network_id: number | null;
 }
@@ -35,7 +35,7 @@ export function AdminStationGroups() {
   // Substation form state
   const [showSubstationModal, setShowSubstationModal] = useState(false);
   const [substationFormData, setSubstationFormData] = useState<SubstationFormData>({
-    number: 1,
+    number: '',
     marketing_name: '',
     major_network_id: null,
   });
@@ -123,7 +123,7 @@ export function AdminStationGroups() {
 
   const handleAddSubstation = () => {
     setSubstationFormData({
-      number: 1,
+      number: '',
       marketing_name: '',
       major_network_id: null,
     });
@@ -138,7 +138,7 @@ export function AdminStationGroups() {
     try {
       await api.admin.createSubstation({
         station_group_id: selectedGroup.id,
-        number: substationFormData.number,
+        number: substationFormData.number as number,
         marketing_name: substationFormData.marketing_name,
         major_network_id: substationFormData.major_network_id,
       });
@@ -411,7 +411,7 @@ export function AdminStationGroups() {
                     type="number"
                     value={substationFormData.number}
                     onChange={(e) =>
-                      setSubstationFormData({ ...substationFormData, number: parseInt(e.target.value) || 1 })
+                      setSubstationFormData({ ...substationFormData, number: e.target.value === '' ? '' : parseInt(e.target.value) })
                     }
                     required
                     min="1"
