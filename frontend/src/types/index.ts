@@ -1,6 +1,9 @@
+export type TMAStatus = 'not_implemented' | 'in_progress' | 'complete';
+
 export interface TMA {
   id: number;
   name: string;
+  status: TMAStatus;
 }
 
 export interface MajorNetwork {

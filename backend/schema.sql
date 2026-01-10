@@ -1,7 +1,9 @@
 -- Television Market Areas
+-- status: 'not_implemented', 'in_progress', 'complete'
 CREATE TABLE IF NOT EXISTS tmas (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL UNIQUE
+  name TEXT NOT NULL UNIQUE,
+  status TEXT DEFAULT 'not_implemented' CHECK(status IN ('not_implemented', 'in_progress', 'complete'))
 );
 
 -- Major Networks (NBC, CBS, ABC, FOX, etc.)

@@ -71,12 +71,24 @@ export function Home() {
             <Link
               key={tma.id}
               to={`/tma/${tma.id}`}
-              className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4 flex items-center justify-between"
+              className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4"
             >
-              <span className="font-medium text-gray-900">{tma.name}</span>
-              <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-gray-900">{tma.name}</span>
+                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+              {tma.status === 'not_implemented' && (
+                <span className="mt-2 inline-block text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                  Coming Soon
+                </span>
+              )}
+              {tma.status === 'in_progress' && (
+                <span className="mt-2 inline-block text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded">
+                  In Progress
+                </span>
+              )}
             </Link>
           ))}
         </div>
