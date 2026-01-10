@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { Env, User, Station, Substation, MajorNetwork, Feedback, FeedbackWithUser, SAuthUserInfo } from '../types';
+import { Env, User, Station, Substation, MajorNetwork, Feedback, FeedbackWithUser, SAuthUserInfo, TMA, TMAStatus } from '../types';
 import { authMiddleware, adminMiddleware } from '../middleware/auth';
 
 const app = new Hono<{ Bindings: Env; Variables: { user: User; userInfo: SAuthUserInfo } }>();
@@ -321,6 +321,29 @@ app.patch('/feedback/:id', async (c) => {
 
   const feedback = await c.env.DB.prepare('SELECT * FROM feedback WHERE id = ?').bind(id).first<Feedback>();
   return c.json(feedback);
+});
+
+// ============ TMAs ============
+
+// Update TMA status
+app.patch('/tmas/:id', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json<{ status: TMAStatus }>();
+
+  const validStatuses: TMAStatus[] = ['not_implemented', 'in_progress', 'complete'];
+  if (!validStatuses.includes(body.status)) {
+    return c.json({ error: 'Bad Request', message: 'Invalid status' }, 400);
+  }
+
+  const existing = await c.env.DB.prepare('SELECT * FROM tmas WHERE id = ?').bind(id).first<TMA>();
+  if (!existing) {
+    return c.json({ error: 'Not Found', message: 'TMA not found' }, 404);
+  }
+
+  await c.env.DB.prepare('UPDATE tmas SET status = ? WHERE id = ?').bind(body.status, id).run();
+
+  const tma = await c.env.DB.prepare('SELECT * FROM tmas WHERE id = ?').bind(id).first<TMA>();
+  return c.json(tma);
 });
 
 export default app;

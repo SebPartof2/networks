@@ -1,4 +1,4 @@
-import { TMA, Station, StationWithSubstations, MajorNetwork, User, Feedback, FeedbackWithUser } from '../types';
+import { TMA, TMAStatus, Station, StationWithSubstations, MajorNetwork, User, Feedback, FeedbackWithUser } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
@@ -92,5 +92,9 @@ export const api = {
     },
     updateFeedback: (id: number, data: { status: 'pending' | 'approved' | 'rejected' }) =>
       fetchApi<Feedback>(`/api/admin/feedback/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+    // TMAs
+    updateTMAStatus: (id: number, status: TMAStatus) =>
+      fetchApi<TMA>(`/api/admin/tmas/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   },
 };

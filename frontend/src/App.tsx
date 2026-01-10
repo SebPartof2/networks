@@ -13,6 +13,7 @@ import { AdminStations } from './pages/admin/AdminStations';
 import { AdminNetworks } from './pages/admin/AdminNetworks';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminFeedback } from './pages/admin/AdminFeedback';
+import { AdminTMAs } from './pages/admin/AdminTMAs';
 
 function App() {
   return (
@@ -67,6 +68,14 @@ function App() {
           element={
             <AdminLayout>
               <AdminFeedback />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/tmas"
+          element={
+            <AdminLayout>
+              <AdminTMAs />
             </AdminLayout>
           }
         />
