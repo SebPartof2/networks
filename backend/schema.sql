@@ -14,6 +14,16 @@ CREATE TABLE IF NOT EXISTS major_networks (
   logo_url TEXT
 );
 
+-- Station Groups (for statewide channels like PBS affiliates)
+-- Multiple stations can share the same substations through a group
+CREATE TABLE IF NOT EXISTS station_groups (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  logo_url TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Main TV Stations
 CREATE TABLE IF NOT EXISTS stations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,23 +32,28 @@ CREATE TABLE IF NOT EXISTS stations (
   marketing_name TEXT NOT NULL,
   logo_url TEXT,
   tma_id INTEGER NOT NULL,
+  station_group_id INTEGER,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (tma_id) REFERENCES tmas(id)
+  FOREIGN KEY (tma_id) REFERENCES tmas(id),
+  FOREIGN KEY (station_group_id) REFERENCES station_groups(id)
 );
 
 -- Substations (X.1, X.2, etc.)
+-- Can belong to either a station directly OR a station_group (for shared substations)
 CREATE TABLE IF NOT EXISTS substations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  station_id INTEGER NOT NULL,
+  station_id INTEGER,
+  station_group_id INTEGER,
   number INTEGER NOT NULL,
   marketing_name TEXT NOT NULL,
   major_network_id INTEGER,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (station_id) REFERENCES stations(id) ON DELETE CASCADE,
+  FOREIGN KEY (station_group_id) REFERENCES station_groups(id) ON DELETE CASCADE,
   FOREIGN KEY (major_network_id) REFERENCES major_networks(id),
-  UNIQUE(station_id, number)
+  CHECK ((station_id IS NOT NULL AND station_group_id IS NULL) OR (station_id IS NULL AND station_group_id IS NOT NULL))
 );
 
 -- Users (synced from S-Auth)
@@ -65,5 +80,7 @@ CREATE TABLE IF NOT EXISTS feedback (
 
 -- Indexes for common queries
 CREATE INDEX IF NOT EXISTS idx_stations_tma ON stations(tma_id);
+CREATE INDEX IF NOT EXISTS idx_stations_group ON stations(station_group_id);
 CREATE INDEX IF NOT EXISTS idx_substations_station ON substations(station_id);
+CREATE INDEX IF NOT EXISTS idx_substations_group ON substations(station_group_id);
 CREATE INDEX IF NOT EXISTS idx_feedback_status ON feedback(status);

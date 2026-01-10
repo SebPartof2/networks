@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/api';
-import { Station, TMA, MajorNetwork, StationWithSubstations, Substation } from '../../types';
+import { Station, TMA, MajorNetwork, StationWithSubstations, Substation, StationGroup } from '../../types';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 
 interface StationFormData {
@@ -10,6 +10,7 @@ interface StationFormData {
   marketing_name: string;
   logo_url: string;
   tma_id: number | '';
+  station_group_id: number | '' | null;
 }
 
 interface SubstationFormData {
@@ -23,6 +24,7 @@ export function AdminStations() {
   const [stations, setStations] = useState<Station[]>([]);
   const [tmas, setTmas] = useState<TMA[]>([]);
   const [networks, setNetworks] = useState<MajorNetwork[]>([]);
+  const [stationGroups, setStationGroups] = useState<StationGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +48,7 @@ export function AdminStations() {
     marketing_name: '',
     logo_url: '',
     tma_id: '',
+    station_group_id: null,
   });
 
   const [selectedStation, setSelectedStation] = useState<StationWithSubstations | null>(null);
@@ -70,11 +73,13 @@ export function AdminStations() {
       api.searchStations(),
       api.getTmas(),
       api.getNetworks(),
+      api.getStationGroups(),
     ])
-      .then(([stationsData, tmasData, networksData]) => {
+      .then(([stationsData, tmasData, networksData, groupsData]) => {
         setStations(stationsData);
         setTmas(tmasData);
         setNetworks(networksData);
+        setStationGroups(groupsData);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -88,6 +93,7 @@ export function AdminStations() {
       marketing_name: '',
       logo_url: '',
       tma_id: filterTmaId ? parseInt(filterTmaId, 10) : '',
+      station_group_id: null,
     });
     setShowStationModal(true);
   };
@@ -100,6 +106,7 @@ export function AdminStations() {
       marketing_name: station.marketing_name,
       logo_url: station.logo_url || '',
       tma_id: station.tma_id,
+      station_group_id: station.station_group_id,
     });
     setShowStationModal(true);
   };
@@ -115,6 +122,7 @@ export function AdminStations() {
         marketing_name: stationForm.marketing_name,
         logo_url: stationForm.logo_url || undefined,
         tma_id: stationForm.tma_id as number,
+        station_group_id: stationForm.station_group_id ? (stationForm.station_group_id as number) : null,
       };
 
       if (editingStation) {
@@ -281,6 +289,11 @@ export function AdminStations() {
                   <div>
                     <span className="font-medium">Ch. {station.station_number}</span>
                     <span className="text-gray-500 ml-2">{station.callsign}</span>
+                    {station.station_group_id && (
+                      <span className="ml-2 bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded">
+                        {stationGroups.find((g: StationGroup) => g.id === station.station_group_id)?.name || 'Group'}
+                      </span>
+                    )}
                     <p className="text-sm text-gray-600">{station.marketing_name}</p>
                     <p className="text-xs text-gray-400">{station.tma_name}</p>
                   </div>
@@ -319,6 +332,11 @@ export function AdminStations() {
             )}
           </div>
           <div className="divide-y max-h-[600px] overflow-y-auto">
+            {selectedStation?.station_group_id && (
+              <div className="p-3 bg-purple-50 text-purple-700 text-sm">
+                Shared substations from: <strong>{stationGroups.find((g: StationGroup) => g.id === selectedStation.station_group_id)?.name}</strong>
+              </div>
+            )}
             {selectedStation?.substations.length === 0 && (
               <p className="p-4 text-gray-500 text-center">No substations</p>
             )}
@@ -331,21 +349,30 @@ export function AdminStations() {
                       {sub.network_short_name}
                     </span>
                   )}
+                  {sub.station_group_id && (
+                    <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded ml-2">
+                      Shared
+                    </span>
+                  )}
                   <p className="text-sm text-gray-600">{sub.marketing_name}</p>
                 </div>
                 <div className="flex space-x-2">
-                  <button
-                    onClick={() => handleEditSubstation(sub)}
-                    className="text-blue-600 hover:underline text-sm"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteSubstation(sub.id)}
-                    className="text-red-600 hover:underline text-sm"
-                  >
-                    Delete
-                  </button>
+                  {!sub.station_group_id && (
+                    <>
+                      <button
+                        onClick={() => handleEditSubstation(sub)}
+                        className="text-blue-600 hover:underline text-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSubstation(sub.id)}
+                        className="text-red-600 hover:underline text-sm"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -414,6 +441,22 @@ export function AdminStations() {
                       <option key={tma.id} value={tma.id}>{tma.name}</option>
                     ))}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Station Group (optional)</label>
+                  <select
+                    value={stationForm.station_group_id || ''}
+                    onChange={(e) => setStationForm({ ...stationForm, station_group_id: e.target.value ? parseInt(e.target.value) : null })}
+                    className="w-full px-3 py-2 border rounded-md"
+                  >
+                    <option value="">None</option>
+                    {stationGroups.map((group: StationGroup) => (
+                      <option key={group.id} value={group.id}>{group.name}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Assign to a group to share substations with other transmitters
+                  </p>
                 </div>
               </div>
               <div className="flex justify-end space-x-3 mt-6">

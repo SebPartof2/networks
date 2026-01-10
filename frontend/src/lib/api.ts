@@ -1,4 +1,4 @@
-import { TMA, TMAStatus, Station, StationWithSubstations, MajorNetwork, NetworkWithAffiliates, User, Feedback, FeedbackWithUser } from '../types';
+import { TMA, TMAStatus, Station, StationWithSubstations, MajorNetwork, NetworkWithAffiliates, User, Feedback, FeedbackWithUser, StationGroup, StationGroupWithDetails } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787';
 
@@ -49,6 +49,9 @@ export const api = {
   getNetworks: () => fetchApi<MajorNetwork[]>('/api/networks'),
   getNetwork: (id: number) => fetchApi<NetworkWithAffiliates>(`/api/networks/${id}`),
 
+  // Station Groups
+  getStationGroups: () => fetchApi<StationGroup[]>('/api/station-groups'),
+
   // Authenticated endpoints
   getCurrentUser: () => fetchApi<User>('/api/users/me'),
   submitFeedback: (data: { tma_name: string; description?: string }) =>
@@ -58,15 +61,15 @@ export const api = {
   // Admin endpoints
   admin: {
     // Stations
-    createStation: (data: { callsign: string; station_number: number; marketing_name: string; logo_url?: string; tma_id: number }) =>
+    createStation: (data: { callsign: string; station_number: number; marketing_name: string; logo_url?: string; tma_id: number; station_group_id?: number | null }) =>
       fetchApi<Station>('/api/admin/stations', { method: 'POST', body: JSON.stringify(data) }),
-    updateStation: (id: number, data: Partial<{ callsign: string; station_number: number; marketing_name: string; logo_url: string | null; tma_id: number }>) =>
+    updateStation: (id: number, data: Partial<{ callsign: string; station_number: number; marketing_name: string; logo_url: string | null; tma_id: number; station_group_id: number | null }>) =>
       fetchApi<Station>(`/api/admin/stations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteStation: (id: number) =>
       fetchApi<{ success: boolean }>(`/api/admin/stations/${id}`, { method: 'DELETE' }),
 
     // Substations
-    createSubstation: (data: { station_id: number; number: number; marketing_name: string; major_network_id?: number | null }) =>
+    createSubstation: (data: { station_id?: number | null; station_group_id?: number | null; number: number; marketing_name: string; major_network_id?: number | null }) =>
       fetchApi<{ id: number }>('/api/admin/substations', { method: 'POST', body: JSON.stringify(data) }),
     updateSubstation: (id: number, data: Partial<{ number: number; marketing_name: string; major_network_id: number | null }>) =>
       fetchApi<{ id: number }>(`/api/admin/substations/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -80,6 +83,16 @@ export const api = {
       fetchApi<MajorNetwork>(`/api/admin/networks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteNetwork: (id: number) =>
       fetchApi<{ success: boolean }>(`/api/admin/networks/${id}`, { method: 'DELETE' }),
+
+    // Station Groups
+    getStationGroups: () => fetchApi<StationGroup[]>('/api/admin/station-groups'),
+    getStationGroup: (id: number) => fetchApi<StationGroupWithDetails>(`/api/admin/station-groups/${id}`),
+    createStationGroup: (data: { name: string; logo_url?: string }) =>
+      fetchApi<StationGroup>('/api/admin/station-groups', { method: 'POST', body: JSON.stringify(data) }),
+    updateStationGroup: (id: number, data: Partial<{ name: string; logo_url: string | null }>) =>
+      fetchApi<StationGroup>(`/api/admin/station-groups/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    deleteStationGroup: (id: number) =>
+      fetchApi<{ success: boolean }>(`/api/admin/station-groups/${id}`, { method: 'DELETE' }),
 
     // Users
     getUsers: () => fetchApi<User[]>('/api/admin/users'),

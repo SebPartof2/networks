@@ -16,6 +16,7 @@ import { AdminNetworks } from './pages/admin/AdminNetworks';
 import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminFeedback } from './pages/admin/AdminFeedback';
 import { AdminTMAs } from './pages/admin/AdminTMAs';
+import { AdminStationGroups } from './pages/admin/AdminStationGroups';
 
 function App() {
   return (
@@ -80,6 +81,14 @@ function App() {
           element={
             <AdminLayout>
               <AdminTMAs />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/station-groups"
+          element={
+            <AdminLayout>
+              <AdminStationGroups />
             </AdminLayout>
           }
         />

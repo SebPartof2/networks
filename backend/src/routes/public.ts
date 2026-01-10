@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { Env, TMA, MajorNetwork, StationWithTMA, StationWithSubstations, SubstationWithNetwork } from '../types';
+import { Env, TMA, MajorNetwork, StationWithTMA, StationWithSubstations, SubstationWithNetwork, StationGroup } from '../types';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -89,34 +89,59 @@ app.get('/stations/:id', async (c) => {
   const id = c.req.param('id');
 
   const station = await c.env.DB.prepare(`
-    SELECT s.*, t.name as tma_name
+    SELECT s.*, t.name as tma_name, sg.name as station_group_name
     FROM stations s
     JOIN tmas t ON s.tma_id = t.id
+    LEFT JOIN station_groups sg ON s.station_group_id = sg.id
     WHERE s.id = ?
-  `).bind(id).first<StationWithTMA>();
+  `).bind(id).first<StationWithTMA & { station_group_name: string | null }>();
 
   if (!station) {
     return c.json({ error: 'Not Found', message: 'Station not found' }, 404);
   }
 
-  const substations = await c.env.DB.prepare(`
-    SELECT
-      sub.*,
-      mn.short_name as network_short_name,
-      mn.long_name as network_long_name,
-      mn.logo_url as network_logo_url
-    FROM substations sub
-    LEFT JOIN major_networks mn ON sub.major_network_id = mn.id
-    WHERE sub.station_id = ?
-    ORDER BY sub.number
-  `).bind(id).all<SubstationWithNetwork>();
+  // Get substations - either from the station directly OR from the station's group
+  let substations;
+  if (station.station_group_id) {
+    // Station belongs to a group - get substations from both station and group
+    substations = await c.env.DB.prepare(`
+      SELECT
+        sub.*,
+        mn.short_name as network_short_name,
+        mn.long_name as network_long_name,
+        mn.logo_url as network_logo_url
+      FROM substations sub
+      LEFT JOIN major_networks mn ON sub.major_network_id = mn.id
+      WHERE sub.station_id = ? OR sub.station_group_id = ?
+      ORDER BY sub.number
+    `).bind(id, station.station_group_id).all<SubstationWithNetwork>();
+  } else {
+    // No group - just get station's own substations
+    substations = await c.env.DB.prepare(`
+      SELECT
+        sub.*,
+        mn.short_name as network_short_name,
+        mn.long_name as network_long_name,
+        mn.logo_url as network_logo_url
+      FROM substations sub
+      LEFT JOIN major_networks mn ON sub.major_network_id = mn.id
+      WHERE sub.station_id = ?
+      ORDER BY sub.number
+    `).bind(id).all<SubstationWithNetwork>();
+  }
 
-  const result: StationWithSubstations = {
+  const result = {
     ...station,
     substations: substations.results,
   };
 
   return c.json(result);
+});
+
+// Get all station groups
+app.get('/station-groups', async (c) => {
+  const groups = await c.env.DB.prepare('SELECT * FROM station_groups ORDER BY name').all<StationGroup>();
+  return c.json(groups.results);
 });
 
 // Get all major networks

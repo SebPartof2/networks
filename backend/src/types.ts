@@ -30,6 +30,14 @@ export interface MajorNetwork {
   logo_url: string | null;
 }
 
+export interface StationGroup {
+  id: number;
+  name: string;
+  logo_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Station {
   id: number;
   callsign: string;
@@ -37,6 +45,7 @@ export interface Station {
   marketing_name: string;
   logo_url: string | null;
   tma_id: number;
+  station_group_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,9 +54,22 @@ export interface StationWithTMA extends Station {
   tma_name: string;
 }
 
+export interface StationWithTMAAndGroup extends StationWithTMA {
+  station_group_name: string | null;
+}
+
+export interface StationGroupWithStations extends StationGroup {
+  stations: StationWithTMA[];
+}
+
+export interface StationGroupWithSubstations extends StationGroup {
+  substations: SubstationWithNetwork[];
+}
+
 export interface Substation {
   id: number;
-  station_id: number;
+  station_id: number | null;
+  station_group_id: number | null;
   number: number;
   marketing_name: string;
   major_network_id: number | null;

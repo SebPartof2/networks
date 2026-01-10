@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { Env, User, Station, Substation, MajorNetwork, Feedback, FeedbackWithUser, SAuthUserInfo, TMA, TMAStatus } from '../types';
+import { Env, User, Station, Substation, MajorNetwork, Feedback, FeedbackWithUser, SAuthUserInfo, TMA, TMAStatus, StationGroup, StationWithTMA, SubstationWithNetwork } from '../types';
 import { authMiddleware, adminMiddleware } from '../middleware/auth';
 
 const app = new Hono<{ Bindings: Env; Variables: { user: User; userInfo: SAuthUserInfo } }>();
@@ -18,6 +18,7 @@ app.post('/stations', async (c) => {
     marketing_name: string;
     logo_url?: string;
     tma_id: number;
+    station_group_id?: number | null;
   }>();
 
   if (!body.callsign || !body.station_number || !body.marketing_name || !body.tma_id) {
@@ -25,9 +26,9 @@ app.post('/stations', async (c) => {
   }
 
   const result = await c.env.DB.prepare(`
-    INSERT INTO stations (callsign, station_number, marketing_name, logo_url, tma_id)
-    VALUES (?, ?, ?, ?, ?)
-  `).bind(body.callsign, body.station_number, body.marketing_name, body.logo_url || null, body.tma_id).run();
+    INSERT INTO stations (callsign, station_number, marketing_name, logo_url, tma_id, station_group_id)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).bind(body.callsign, body.station_number, body.marketing_name, body.logo_url || null, body.tma_id, body.station_group_id || null).run();
 
   const station = await c.env.DB.prepare('SELECT * FROM stations WHERE id = ?')
     .bind(result.meta.last_row_id)
@@ -45,6 +46,7 @@ app.put('/stations/:id', async (c) => {
     marketing_name?: string;
     logo_url?: string | null;
     tma_id?: number;
+    station_group_id?: number | null;
   }>();
 
   const existing = await c.env.DB.prepare('SELECT * FROM stations WHERE id = ?').bind(id).first<Station>();
@@ -59,6 +61,7 @@ app.put('/stations/:id', async (c) => {
       marketing_name = ?,
       logo_url = ?,
       tma_id = ?,
+      station_group_id = ?,
       updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `).bind(
@@ -67,6 +70,7 @@ app.put('/stations/:id', async (c) => {
     body.marketing_name ?? existing.marketing_name,
     body.logo_url !== undefined ? body.logo_url : existing.logo_url,
     body.tma_id ?? existing.tma_id,
+    body.station_group_id !== undefined ? body.station_group_id : existing.station_group_id,
     id
   ).run();
 
@@ -92,26 +96,39 @@ app.delete('/stations/:id', async (c) => {
 // Create substation
 app.post('/substations', async (c) => {
   const body = await c.req.json<{
-    station_id: number;
+    station_id?: number | null;
+    station_group_id?: number | null;
     number: number;
     marketing_name: string;
     major_network_id?: number | null;
   }>();
 
-  if (!body.station_id || !body.number || !body.marketing_name) {
+  if (!body.number || !body.marketing_name) {
     return c.json({ error: 'Bad Request', message: 'Missing required fields' }, 400);
   }
 
-  // Verify station exists
-  const station = await c.env.DB.prepare('SELECT * FROM stations WHERE id = ?').bind(body.station_id).first();
-  if (!station) {
-    return c.json({ error: 'Bad Request', message: 'Station not found' }, 400);
+  // Must have exactly one of station_id or station_group_id
+  if ((!body.station_id && !body.station_group_id) || (body.station_id && body.station_group_id)) {
+    return c.json({ error: 'Bad Request', message: 'Must specify exactly one of station_id or station_group_id' }, 400);
+  }
+
+  // Verify station or station group exists
+  if (body.station_id) {
+    const station = await c.env.DB.prepare('SELECT * FROM stations WHERE id = ?').bind(body.station_id).first();
+    if (!station) {
+      return c.json({ error: 'Bad Request', message: 'Station not found' }, 400);
+    }
+  } else if (body.station_group_id) {
+    const group = await c.env.DB.prepare('SELECT * FROM station_groups WHERE id = ?').bind(body.station_group_id).first();
+    if (!group) {
+      return c.json({ error: 'Bad Request', message: 'Station group not found' }, 400);
+    }
   }
 
   const result = await c.env.DB.prepare(`
-    INSERT INTO substations (station_id, number, marketing_name, major_network_id)
-    VALUES (?, ?, ?, ?)
-  `).bind(body.station_id, body.number, body.marketing_name, body.major_network_id || null).run();
+    INSERT INTO substations (station_id, station_group_id, number, marketing_name, major_network_id)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(body.station_id || null, body.station_group_id || null, body.number, body.marketing_name, body.major_network_id || null).run();
 
   const substation = await c.env.DB.prepare('SELECT * FROM substations WHERE id = ?')
     .bind(result.meta.last_row_id)
@@ -344,6 +361,138 @@ app.patch('/tmas/:id', async (c) => {
 
   const tma = await c.env.DB.prepare('SELECT * FROM tmas WHERE id = ?').bind(id).first<TMA>();
   return c.json(tma);
+});
+
+// ============ STATION GROUPS ============
+
+// List all station groups
+app.get('/station-groups', async (c) => {
+  const groups = await c.env.DB.prepare('SELECT * FROM station_groups ORDER BY name').all<StationGroup>();
+  return c.json(groups.results);
+});
+
+// Get station group by ID with stations and substations
+app.get('/station-groups/:id', async (c) => {
+  const id = c.req.param('id');
+
+  const group = await c.env.DB.prepare('SELECT * FROM station_groups WHERE id = ?')
+    .bind(id)
+    .first<StationGroup>();
+
+  if (!group) {
+    return c.json({ error: 'Not Found', message: 'Station group not found' }, 404);
+  }
+
+  // Get stations in this group
+  const stations = await c.env.DB.prepare(`
+    SELECT s.*, t.name as tma_name
+    FROM stations s
+    JOIN tmas t ON s.tma_id = t.id
+    WHERE s.station_group_id = ?
+    ORDER BY t.name, s.station_number
+  `).bind(id).all<StationWithTMA>();
+
+  // Get substations belonging to this group
+  const substations = await c.env.DB.prepare(`
+    SELECT
+      sub.*,
+      mn.short_name as network_short_name,
+      mn.long_name as network_long_name,
+      mn.logo_url as network_logo_url
+    FROM substations sub
+    LEFT JOIN major_networks mn ON sub.major_network_id = mn.id
+    WHERE sub.station_group_id = ?
+    ORDER BY sub.number
+  `).bind(id).all<SubstationWithNetwork>();
+
+  return c.json({
+    ...group,
+    stations: stations.results,
+    substations: substations.results,
+  });
+});
+
+// Create station group
+app.post('/station-groups', async (c) => {
+  const body = await c.req.json<{
+    name: string;
+    logo_url?: string;
+  }>();
+
+  if (!body.name) {
+    return c.json({ error: 'Bad Request', message: 'Missing required fields' }, 400);
+  }
+
+  const result = await c.env.DB.prepare(`
+    INSERT INTO station_groups (name, logo_url)
+    VALUES (?, ?)
+  `).bind(body.name, body.logo_url || null).run();
+
+  const group = await c.env.DB.prepare('SELECT * FROM station_groups WHERE id = ?')
+    .bind(result.meta.last_row_id)
+    .first<StationGroup>();
+
+  return c.json(group, 201);
+});
+
+// Update station group
+app.put('/station-groups/:id', async (c) => {
+  const id = c.req.param('id');
+  const body = await c.req.json<{
+    name?: string;
+    logo_url?: string | null;
+  }>();
+
+  const existing = await c.env.DB.prepare('SELECT * FROM station_groups WHERE id = ?').bind(id).first<StationGroup>();
+  if (!existing) {
+    return c.json({ error: 'Not Found', message: 'Station group not found' }, 404);
+  }
+
+  await c.env.DB.prepare(`
+    UPDATE station_groups SET
+      name = ?,
+      logo_url = ?,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).bind(
+    body.name ?? existing.name,
+    body.logo_url !== undefined ? body.logo_url : existing.logo_url,
+    id
+  ).run();
+
+  const group = await c.env.DB.prepare('SELECT * FROM station_groups WHERE id = ?').bind(id).first<StationGroup>();
+  return c.json(group);
+});
+
+// Delete station group
+app.delete('/station-groups/:id', async (c) => {
+  const id = c.req.param('id');
+
+  const existing = await c.env.DB.prepare('SELECT * FROM station_groups WHERE id = ?').bind(id).first<StationGroup>();
+  if (!existing) {
+    return c.json({ error: 'Not Found', message: 'Station group not found' }, 404);
+  }
+
+  // Check if group has stations
+  const hasStations = await c.env.DB.prepare('SELECT COUNT(*) as count FROM stations WHERE station_group_id = ?')
+    .bind(id)
+    .first<{ count: number }>();
+
+  if (hasStations && hasStations.count > 0) {
+    return c.json({ error: 'Conflict', message: 'Station group has stations assigned to it' }, 409);
+  }
+
+  // Check if group has substations
+  const hasSubstations = await c.env.DB.prepare('SELECT COUNT(*) as count FROM substations WHERE station_group_id = ?')
+    .bind(id)
+    .first<{ count: number }>();
+
+  if (hasSubstations && hasSubstations.count > 0) {
+    return c.json({ error: 'Conflict', message: 'Station group has substations assigned to it' }, 409);
+  }
+
+  await c.env.DB.prepare('DELETE FROM station_groups WHERE id = ?').bind(id).run();
+  return c.json({ success: true });
 });
 
 export default app;
