@@ -3,6 +3,15 @@ import { Env, TMA, MajorNetwork, StationWithTMA, StationWithSubstations, Substat
 
 const app = new Hono<{ Bindings: Env }>();
 
+// Helper to replace callsign placeholders in marketing names
+// {CALL} = full callsign (e.g., "KTVH-TV")
+// {CALL4} = first 4 characters (e.g., "KTVH")
+function replaceCallsignPlaceholders(marketingName: string, callsign: string): string {
+  return marketingName
+    .replace(/\{CALL\}/g, callsign)
+    .replace(/\{CALL4\}/g, callsign.substring(0, 4));
+}
+
 // Get all TMAs
 app.get('/tmas', async (c) => {
   const tmas = await c.env.DB.prepare('SELECT * FROM tmas ORDER BY name').all<TMA>();
@@ -130,9 +139,20 @@ app.get('/stations/:id', async (c) => {
     `).bind(id).all<SubstationWithNetwork>();
   }
 
+  // Replace callsign placeholders in group substations
+  const processedSubstations = substations.results.map(sub => {
+    if (sub.station_group_id) {
+      return {
+        ...sub,
+        marketing_name: replaceCallsignPlaceholders(sub.marketing_name, station.callsign),
+      };
+    }
+    return sub;
+  });
+
   const result = {
     ...station,
-    substations: substations.results,
+    substations: processedSubstations,
   };
 
   return c.json(result);

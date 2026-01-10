@@ -427,9 +427,14 @@ export function AdminStationGroups() {
                       setSubstationFormData({ ...substationFormData, marketing_name: e.target.value })
                     }
                     required
-                    placeholder="e.g., PBS HD"
+                    placeholder="e.g., {CALL}-DT or PBS HD"
                     className="w-full px-3 py-2 border rounded-md"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Use <code className="bg-gray-100 px-1">{'{CALL}'}</code> for full callsign or <code className="bg-gray-100 px-1">{'{CALL4}'}</code> for first 4 characters.
+                    <br />
+                    Example: <code className="bg-gray-100 px-1">{'{CALL}'}-DT</code> becomes <code className="bg-gray-100 px-1">KTVH-DT</code> for station KTVH
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
