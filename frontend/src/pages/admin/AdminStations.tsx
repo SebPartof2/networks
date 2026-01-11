@@ -17,7 +17,7 @@ interface StationFormData {
 interface SubstationFormData {
   number: number | '';
   marketing_name: string;
-  major_network_id: number | '' | null;
+  major_network_id: number | null;
 }
 
 export function AdminStations() {
@@ -66,7 +66,7 @@ export function AdminStations() {
   const [substationForm, setSubstationForm] = useState<SubstationFormData>({
     number: '',
     marketing_name: '',
-    major_network_id: '',
+    major_network_id: null,
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -194,7 +194,7 @@ export function AdminStations() {
     setSubstationForm({
       number: '',
       marketing_name: '',
-      major_network_id: '',
+      major_network_id: null,
     });
     setShowSubstationModal(true);
   };
@@ -204,7 +204,7 @@ export function AdminStations() {
     setSubstationForm({
       number: sub.number,
       marketing_name: sub.marketing_name,
-      major_network_id: sub.major_network_id || '',
+      major_network_id: sub.major_network_id ?? null,
     });
     setShowSubstationModal(true);
   };
