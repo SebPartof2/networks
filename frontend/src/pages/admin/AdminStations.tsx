@@ -70,12 +70,30 @@ export function AdminStations() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState('');
 
-  // Filter stations by selected TMA
+  // Filter stations by selected TMA and search query
   const filteredStations = useMemo(() => {
-    if (!filterTmaId) return stations;
-    return stations.filter((s) => s.tma_id === parseInt(filterTmaId, 10));
-  }, [stations, filterTmaId]);
+    let result = stations;
+
+    // Filter by TMA
+    if (filterTmaId) {
+      result = result.filter((s) => s.tma_id === parseInt(filterTmaId, 10));
+    }
+
+    // Filter by search query
+    if (search) {
+      const searchLower = search.toLowerCase();
+      result = result.filter(
+        (s) =>
+          s.callsign.toLowerCase().includes(searchLower) ||
+          s.station_number.toString().includes(searchLower) ||
+          s.marketing_name.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return result;
+  }, [stations, filterTmaId, search]);
 
   useEffect(() => {
     Promise.all([
@@ -279,6 +297,13 @@ export function AdminStations() {
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="p-4 border-b space-y-3">
             <h2 className="font-semibold">Stations</h2>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by callsign, channel, or name..."
+              className="w-full px-3 py-2 border rounded-md text-sm"
+            />
             <select
               value={filterTmaId}
               onChange={(e) => {
@@ -300,7 +325,9 @@ export function AdminStations() {
           </div>
           <div className="divide-y max-h-[600px] overflow-y-auto">
             {filteredStations.length === 0 && (
-              <p className="p-4 text-gray-500 text-center">No stations in this market</p>
+              <p className="p-4 text-gray-500 text-center">
+                {search ? 'No stations match your search' : 'No stations in this market'}
+              </p>
             )}
             {filteredStations.map((station) => (
               <div
