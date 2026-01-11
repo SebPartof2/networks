@@ -164,9 +164,25 @@ app.get('/station-groups', async (c) => {
   return c.json(groups.results);
 });
 
-// Get all major networks
+// Get all major networks with affiliate counts
 app.get('/networks', async (c) => {
-  const networks = await c.env.DB.prepare('SELECT * FROM major_networks ORDER BY short_name').all<MajorNetwork>();
+  const networks = await c.env.DB.prepare(`
+    SELECT
+      mn.*,
+      (
+        SELECT COUNT(*)
+        FROM substations sub
+        WHERE sub.major_network_id = mn.id AND sub.station_id IS NOT NULL
+      ) + (
+        SELECT COUNT(*)
+        FROM substations sub
+        JOIN station_groups sg ON sub.station_group_id = sg.id
+        JOIN stations s ON s.station_group_id = sg.id
+        WHERE sub.major_network_id = mn.id
+      ) as affiliate_count
+    FROM major_networks mn
+    ORDER BY mn.short_name
+  `).all<MajorNetwork & { affiliate_count: number }>();
   return c.json(networks.results);
 });
 

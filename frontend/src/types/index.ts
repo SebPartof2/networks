@@ -11,6 +11,7 @@ export interface MajorNetwork {
   short_name: string;
   long_name: string;
   logo_url: string | null;
+  affiliate_count?: number;
 }
 
 export interface StationGroup {

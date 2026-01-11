@@ -5,11 +5,14 @@ import { MajorNetwork } from '../types';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { SearchInput } from '../components/SearchInput';
 
+type SortOption = 'name' | 'affiliates';
+
 export function Networks() {
   const [networks, setNetworks] = useState<MajorNetwork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('name');
 
   useEffect(() => {
     api.getNetworks()
@@ -19,14 +22,26 @@ export function Networks() {
   }, []);
 
   const filteredNetworks = useMemo(() => {
-    if (!search) return networks;
-    const searchLower = search.toLowerCase();
-    return networks.filter(
-      (net) =>
-        net.short_name.toLowerCase().includes(searchLower) ||
-        net.long_name.toLowerCase().includes(searchLower)
-    );
-  }, [networks, search]);
+    let result = networks;
+
+    if (search) {
+      const searchLower = search.toLowerCase();
+      result = result.filter(
+        (net) =>
+          net.short_name.toLowerCase().includes(searchLower) ||
+          net.long_name.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Sort
+    if (sortBy === 'affiliates') {
+      result = [...result].sort((a, b) => (b.affiliate_count || 0) - (a.affiliate_count || 0));
+    } else {
+      result = [...result].sort((a, b) => a.short_name.localeCompare(b.short_name));
+    }
+
+    return result;
+  }, [networks, search, sortBy]);
 
   if (loading) {
     return (
@@ -55,12 +70,22 @@ export function Networks() {
         </p>
       </div>
 
-      <div className="mb-6 max-w-md">
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search networks..."
-        />
+      <div className="mb-6 flex flex-col sm:flex-row gap-3">
+        <div className="max-w-md flex-1">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search networks..."
+          />
+        </div>
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortOption)}
+          className="px-3 py-2 border rounded-md text-sm bg-white"
+        >
+          <option value="name">Sort by Name</option>
+          <option value="affiliates">Sort by Affiliates</option>
+        </select>
       </div>
 
       {filteredNetworks.length === 0 ? (
@@ -93,6 +118,11 @@ export function Networks() {
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-gray-900">{network.short_name}</p>
                 <p className="text-sm text-gray-500 truncate">{network.long_name}</p>
+                {network.affiliate_count !== undefined && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    {network.affiliate_count} affiliate{network.affiliate_count !== 1 ? 's' : ''}
+                  </p>
+                )}
               </div>
               <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
