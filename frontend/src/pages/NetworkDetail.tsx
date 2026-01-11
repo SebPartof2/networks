@@ -90,17 +90,21 @@ export function NetworkDetail() {
             </div>
           )}
 
-          <div className="min-w-0">
+          <div className="flex-1 min-w-0">
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
               {network.short_name}
             </h1>
-            <p className="text-base sm:text-lg text-gray-600 mb-2">
+            <p className="text-base sm:text-lg text-gray-600">
               {network.long_name}
             </p>
-            <p className="text-sm text-gray-500">
-              {network.affiliates.length} affiliate{network.affiliates.length !== 1 ? 's' : ''} nationwide
-            </p>
           </div>
+
+          {network.affiliates.length > 0 && (
+            <div className="flex flex-col items-center flex-shrink-0 bg-blue-50 rounded-lg px-6 py-4">
+              <span className="text-4xl sm:text-5xl font-bold text-blue-600">{network.affiliates.length}</span>
+              <span className="text-sm text-gray-600">affiliates</span>
+            </div>
+          )}
         </div>
       </div>
 
