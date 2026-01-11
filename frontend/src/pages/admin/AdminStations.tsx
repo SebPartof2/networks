@@ -30,14 +30,22 @@ export function AdminStations() {
 
   // Get filter from URL params
   const filterTmaId = searchParams.get('tma') || '';
+  const stationIdParam = searchParams.get('station') || '';
 
   // Update URL when filter changes
   const setFilterTmaId = (value: string) => {
-    if (value) {
-      setSearchParams({ tma: value });
-    } else {
-      setSearchParams({});
-    }
+    const params: Record<string, string> = {};
+    if (value) params.tma = value;
+    // Clear station when changing TMA filter
+    setSearchParams(params);
+  };
+
+  // Update URL when station is selected
+  const setStationIdParam = (stationId: number | null) => {
+    const params: Record<string, string> = {};
+    if (filterTmaId) params.tma = filterTmaId;
+    if (stationId) params.station = stationId.toString();
+    setSearchParams(params);
   };
 
   const [showStationModal, setShowStationModal] = useState(false);
@@ -84,6 +92,21 @@ export function AdminStations() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  // Load station from URL param on initial load
+  useEffect(() => {
+    if (stationIdParam && !loading && !selectedStation) {
+      const stationId = parseInt(stationIdParam, 10);
+      if (!isNaN(stationId)) {
+        api.getStation(stationId)
+          .then(setSelectedStation)
+          .catch(() => {
+            // Station not found, clear from URL
+            setStationIdParam(null);
+          });
+      }
+    }
+  }, [stationIdParam, loading, selectedStation]);
 
   const handleAddStation = () => {
     setEditingStation(null);
@@ -159,6 +182,7 @@ export function AdminStations() {
     try {
       const full = await api.getStation(station.id);
       setSelectedStation(full);
+      setStationIdParam(station.id);
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to load station');
     }
