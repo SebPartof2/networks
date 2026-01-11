@@ -106,10 +106,10 @@ export function Networks() {
                 <img
                   src={network.logo_url}
                   alt={network.short_name}
-                  className="w-12 h-12 object-contain"
+                  className="w-12 h-12 object-contain flex-shrink-0"
                 />
               ) : (
-                <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
                   <span className="text-lg font-bold text-gray-400">
                     {network.short_name.charAt(0)}
                   </span>
@@ -118,12 +118,13 @@ export function Networks() {
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-gray-900">{network.short_name}</p>
                 <p className="text-sm text-gray-500 truncate">{network.long_name}</p>
-                {network.affiliate_count !== undefined && (
-                  <p className="text-xs text-blue-600 mt-1">
-                    {network.affiliate_count} affiliate{network.affiliate_count !== 1 ? 's' : ''}
-                  </p>
-                )}
               </div>
+              {network.affiliate_count !== undefined && network.affiliate_count > 0 && (
+                <div className="flex flex-col items-center flex-shrink-0">
+                  <span className="text-2xl font-bold text-blue-600">{network.affiliate_count}</span>
+                  <span className="text-xs text-gray-500">affiliates</span>
+                </div>
+              )}
               <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

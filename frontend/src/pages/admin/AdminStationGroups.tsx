@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
-import { StationGroup, StationGroupWithDetails, MajorNetwork } from '../../types';
+import { StationGroup, StationGroupWithDetails, MajorNetwork, Substation } from '../../types';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { NetworkPicker } from '../../components/NetworkPicker';
 
@@ -35,6 +35,7 @@ export function AdminStationGroups() {
 
   // Substation form state
   const [showSubstationModal, setShowSubstationModal] = useState(false);
+  const [editingSubstation, setEditingSubstation] = useState<Substation | null>(null);
   const [substationFormData, setSubstationFormData] = useState<SubstationFormData>({
     number: '',
     marketing_name: '',
@@ -123,10 +124,21 @@ export function AdminStationGroups() {
   };
 
   const handleAddSubstation = () => {
+    setEditingSubstation(null);
     setSubstationFormData({
       number: '',
       marketing_name: '',
       major_network_id: null,
+    });
+    setShowSubstationModal(true);
+  };
+
+  const handleEditSubstation = (sub: Substation) => {
+    setEditingSubstation(sub);
+    setSubstationFormData({
+      number: sub.number,
+      marketing_name: sub.marketing_name,
+      major_network_id: sub.major_network_id ?? null,
     });
     setShowSubstationModal(true);
   };
@@ -137,19 +149,25 @@ export function AdminStationGroups() {
 
     setSubmitting(true);
     try {
-      await api.admin.createSubstation({
+      const data = {
         station_group_id: selectedGroup.id,
         number: substationFormData.number as number,
         marketing_name: substationFormData.marketing_name,
         major_network_id: substationFormData.major_network_id,
-      });
+      };
+
+      if (editingSubstation) {
+        await api.admin.updateSubstation(editingSubstation.id, data);
+      } else {
+        await api.admin.createSubstation(data);
+      }
 
       // Refresh group details
       const updated = await api.admin.getStationGroup(selectedGroup.id);
       setSelectedGroup(updated);
       setShowSubstationModal(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to add substation');
+      alert(err instanceof Error ? err.message : 'Failed to save substation');
     } finally {
       setSubmitting(false);
     }
@@ -334,12 +352,20 @@ export function AdminStationGroups() {
                             <span className="ml-2 text-sm text-blue-600">({sub.network_short_name})</span>
                           )}
                         </div>
-                        <button
-                          onClick={() => handleDeleteSubstation(sub.id)}
-                          className="text-red-600 hover:underline text-sm"
-                        >
-                          Delete
-                        </button>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEditSubstation(sub)}
+                            className="text-blue-600 hover:underline text-sm"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSubstation(sub.id)}
+                            className="text-red-600 hover:underline text-sm"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -414,7 +440,9 @@ export function AdminStationGroups() {
       {showSubstationModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Add Shared Substation</h2>
+            <h2 className="text-xl font-bold mb-4">
+              {editingSubstation ? 'Edit Shared Substation' : 'Add Shared Substation'}
+            </h2>
             <form onSubmit={handleSubmitSubstation}>
               <div className="space-y-4">
                 <div>
@@ -479,7 +507,7 @@ export function AdminStationGroups() {
                   disabled={submitting}
                   className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
                 >
-                  {submitting ? 'Adding...' : 'Add Substation'}
+                  {submitting ? 'Saving...' : editingSubstation ? 'Save Changes' : 'Add Substation'}
                 </button>
               </div>
             </form>
