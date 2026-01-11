@@ -76,25 +76,25 @@ export function NetworkDetail() {
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-        <div className="flex items-center space-x-6">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
           {network.logo_url ? (
             <img
               src={network.logo_url}
               alt={network.short_name}
-              className="w-24 h-24 object-contain"
+              className="w-20 h-20 sm:w-24 sm:h-24 object-contain flex-shrink-0"
             />
           ) : (
-            <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center">
-              <span className="text-3xl font-bold text-gray-400">{network.short_name.charAt(0)}</span>
+            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-2xl sm:text-3xl font-bold text-gray-400">{network.short_name.charAt(0)}</span>
             </div>
           )}
 
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-1">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
               {network.short_name}
             </h1>
-            <p className="text-lg text-gray-600 mb-2">
+            <p className="text-base sm:text-lg text-gray-600 mb-2">
               {network.long_name}
             </p>
             <p className="text-sm text-gray-500">

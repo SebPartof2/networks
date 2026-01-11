@@ -50,23 +50,23 @@ export function StationDetail() {
         </Link>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-        <div className="flex items-start space-x-6">
+      <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
           {station.logo_url ? (
             <img
               src={station.logo_url}
               alt={station.marketing_name}
-              className="w-24 h-24 object-contain rounded-lg"
+              className="w-20 h-20 sm:w-24 sm:h-24 object-contain rounded-lg flex-shrink-0"
             />
           ) : (
-            <div className="w-24 h-24 bg-gray-200 rounded-lg flex items-center justify-center">
-              <span className="text-3xl font-bold text-gray-400">{station.station_number}</span>
+            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-2xl sm:text-3xl font-bold text-gray-400">{station.station_number}</span>
             </div>
           )}
 
-          <div className="flex-1">
-            <div className="flex items-center space-x-3 mb-2">
-              <span className="text-2xl font-bold text-blue-600">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+              <span className="text-xl sm:text-2xl font-bold text-blue-600">
                 Channel {station.station_number}
               </span>
               <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">
@@ -74,7 +74,7 @@ export function StationDetail() {
               </span>
             </div>
 
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               {station.marketing_name}
             </h1>
 

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
@@ -8,8 +9,23 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { user, isAuthenticated, isAdmin, login, logout } = useAuth();
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
+
+  const navLinks = [
+    { path: '/', label: 'Browse by TMA', active: isActive('/') },
+    { path: '/stations', label: 'Stations', active: isActive('/stations') || location.pathname.startsWith('/stations/') },
+    { path: '/networks', label: 'Networks', active: isActive('/networks') || location.pathname.startsWith('/networks/') },
+  ];
+
+  if (isAuthenticated) {
+    navLinks.push({ path: '/feedback', label: 'Feedback', active: isActive('/feedback') });
+  }
+
+  if (isAdmin) {
+    navLinks.push({ path: '/admin', label: 'Admin', active: location.pathname.startsWith('/admin') });
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -26,56 +42,23 @@ export function Layout({ children }: LayoutProps) {
               </Link>
 
               <nav className="hidden md:flex space-x-4">
-                <Link
-                  to="/"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    isActive('/') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Browse by TMA
-                </Link>
-                <Link
-                  to="/stations"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    isActive('/stations') || location.pathname.startsWith('/stations/') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Stations
-                </Link>
-                <Link
-                  to="/networks"
-                  className={`px-3 py-2 rounded-md text-sm font-medium ${
-                    isActive('/networks') || location.pathname.startsWith('/networks/') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Networks
-                </Link>
-                {isAuthenticated && (
+                {navLinks.map((link) => (
                   <Link
-                    to="/feedback"
+                    key={link.path}
+                    to={link.path}
                     className={`px-3 py-2 rounded-md text-sm font-medium ${
-                      isActive('/feedback') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900'
+                      link.active ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900'
                     }`}
                   >
-                    Feedback
+                    {link.label}
                   </Link>
-                )}
-                {isAdmin && (
-                  <Link
-                    to="/admin"
-                    className={`px-3 py-2 rounded-md text-sm font-medium ${
-                      location.pathname.startsWith('/admin') ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Admin
-                  </Link>
-                )}
+                ))}
               </nav>
             </div>
 
             <div className="flex items-center space-x-4">
               {isAuthenticated ? (
-                <div className="flex items-center space-x-4">
+                <div className="hidden md:flex items-center space-x-4">
                   <span className="text-sm text-gray-600">
                     {user?.given_name || user?.email}
                   </span>
@@ -89,14 +72,71 @@ export function Layout({ children }: LayoutProps) {
               ) : (
                 <button
                   onClick={login}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
+                  className="hidden md:block bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700"
+                >
+                  Sign In
+                </button>
+              )}
+
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2 text-gray-600 hover:text-gray-900"
+                aria-label="Toggle menu"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  {mobileMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t bg-white">
+            <nav className="px-4 py-3 space-y-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-3 py-2 rounded-md text-base font-medium ${
+                    link.active ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+            <div className="px-4 py-3 border-t">
+              {isAuthenticated ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600 px-3">
+                    Signed in as {user?.given_name || user?.email}
+                  </p>
+                  <button
+                    onClick={() => { logout(); setMobileMenuOpen(false); }}
+                    className="block w-full text-left px-3 py-2 text-base font-medium text-gray-600 hover:bg-gray-100 rounded-md"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => { login(); setMobileMenuOpen(false); }}
+                  className="w-full bg-blue-600 text-white px-4 py-2 rounded-md text-base font-medium hover:bg-blue-700"
                 >
                   Sign In
                 </button>
               )}
             </div>
           </div>
-        </div>
+        )}
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
