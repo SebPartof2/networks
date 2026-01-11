@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Substation } from '../types';
 
 interface SubstationCardProps {
@@ -32,10 +33,14 @@ export function SubstationCard({ substation, parentStationNumber, parentLogoUrl 
             <span className="font-bold text-blue-600">
               {parentStationNumber}.{substation.number}
             </span>
-            {substation.network_short_name && (
-              <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">
+            {substation.network_short_name && substation.major_network_id && (
+              <Link
+                to={`/networks/${substation.major_network_id}`}
+                className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded hover:bg-blue-200 transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
                 {substation.network_short_name}
-              </span>
+              </Link>
             )}
           </div>
           <h4 className="font-medium text-gray-900 truncate">
