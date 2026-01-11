@@ -9,6 +9,7 @@ export function AdminTMAs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<TMAStatus | ''>('');
   const [updating, setUpdating] = useState<number | null>(null);
 
   useEffect(() => {
@@ -30,9 +31,11 @@ export function AdminTMAs() {
     }
   };
 
-  const filteredTmas = search
-    ? tmas.filter((tma) => tma.name.toLowerCase().includes(search.toLowerCase()))
-    : tmas;
+  const filteredTmas = tmas.filter((tma) => {
+    const matchesSearch = !search || tma.name.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = !statusFilter || tma.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const statusCounts = {
     complete: tmas.filter((t) => t.status === 'complete').length,
@@ -86,12 +89,24 @@ export function AdminTMAs() {
         </div>
       </div>
 
-      <div className="mb-4 max-w-md">
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search markets..."
-        />
+      <div className="mb-4 flex flex-col sm:flex-row gap-3">
+        <div className="max-w-md flex-1">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search markets..."
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as TMAStatus | '')}
+          className="px-3 py-2 border rounded-md text-sm"
+        >
+          <option value="">All Status</option>
+          <option value="complete">Complete</option>
+          <option value="in_progress">In Progress</option>
+          <option value="not_implemented">Not Implemented</option>
+        </select>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden overflow-x-auto">
