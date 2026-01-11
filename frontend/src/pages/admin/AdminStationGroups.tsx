@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { StationGroup, StationGroupWithDetails, MajorNetwork } from '../../types';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { NetworkPicker } from '../../components/NetworkPicker';
 
 interface GroupFormData {
   name: string;
@@ -412,7 +413,7 @@ export function AdminStationGroups() {
       {/* Substation Modal */}
       {showSubstationModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Add Shared Substation</h2>
             <form onSubmit={handleSubmitSubstation}>
               <div className="space-y-4">
@@ -450,26 +451,19 @@ export function AdminStationGroups() {
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Major Network (optional)
                   </label>
-                  <select
-                    value={substationFormData.major_network_id || ''}
-                    onChange={(e) =>
+                  <NetworkPicker
+                    networks={networks}
+                    value={substationFormData.major_network_id}
+                    onChange={(id) =>
                       setSubstationFormData({
                         ...substationFormData,
-                        major_network_id: e.target.value ? parseInt(e.target.value) : null,
+                        major_network_id: id,
                       })
                     }
-                    className="w-full px-3 py-2 border rounded-md"
-                  >
-                    <option value="">None</option>
-                    {networks.map((network) => (
-                      <option key={network.id} value={network.id}>
-                        {network.short_name} - {network.long_name}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
               <div className="flex justify-end space-x-3 mt-6">

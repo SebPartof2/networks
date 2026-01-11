@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { Station, TMA, MajorNetwork, StationWithSubstations, Substation, StationGroup } from '../../types';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { NetworkPicker } from '../../components/NetworkPicker';
 
 interface StationFormData {
   callsign: string;
@@ -523,7 +524,7 @@ export function AdminStations() {
       {/* Substation Modal */}
       {showSubstationModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">
               {editingSubstation ? 'Edit Substation' : 'Add Substation'}
             </h2>
@@ -552,17 +553,12 @@ export function AdminStations() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Network Affiliate (optional)</label>
-                  <select
-                    value={substationForm.major_network_id || ''}
-                    onChange={(e) => setSubstationForm({ ...substationForm, major_network_id: e.target.value ? parseInt(e.target.value) : null })}
-                    className="w-full px-3 py-2 border rounded-md"
-                  >
-                    <option value="">None</option>
-                    {networks.map((net) => (
-                      <option key={net.id} value={net.id}>{net.short_name} - {net.long_name}</option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Network Affiliate (optional)</label>
+                  <NetworkPicker
+                    networks={networks}
+                    value={substationForm.major_network_id}
+                    onChange={(id) => setSubstationForm({ ...substationForm, major_network_id: id })}
+                  />
                 </div>
               </div>
               <div className="flex justify-end space-x-3 mt-6">
