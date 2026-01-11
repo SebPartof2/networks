@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { api } from '../../lib/api';
 import { MajorNetwork } from '../../types';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
@@ -13,6 +13,7 @@ export function AdminNetworks() {
   const [networks, setNetworks] = useState<MajorNetwork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<MajorNetwork | null>(null);
@@ -29,6 +30,16 @@ export function AdminNetworks() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
+
+  const filteredNetworks = useMemo(() => {
+    if (!search) return networks;
+    const searchLower = search.toLowerCase();
+    return networks.filter(
+      (n) =>
+        n.short_name.toLowerCase().includes(searchLower) ||
+        n.long_name.toLowerCase().includes(searchLower)
+    );
+  }, [networks, search]);
 
   const handleAdd = () => {
     setEditing(null);
@@ -108,51 +119,81 @@ export function AdminNetworks() {
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Logo</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Short Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Long Name</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {networks.map((network) => (
-              <tr key={network.id}>
-                <td className="px-6 py-4">
-                  {network.logo_url ? (
-                    <img src={network.logo_url} alt={network.short_name} className="w-10 h-10 object-contain" />
-                  ) : (
-                    <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
-                      <span className="text-xs text-gray-400">{network.short_name}</span>
-                    </div>
-                  )}
-                </td>
-                <td className="px-6 py-4 font-medium text-gray-900">{network.short_name}</td>
-                <td className="px-6 py-4 text-gray-600">{network.long_name}</td>
-                <td className="px-6 py-4 text-right space-x-3">
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        {/* Search input */}
+        <div className="relative mb-4">
+          <svg
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search networks..."
+            className="w-full pl-10 pr-3 py-2 border rounded-md text-sm"
+          />
+        </div>
+
+        {/* Network grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {filteredNetworks.map((network) => (
+            <div
+              key={network.id}
+              className="p-3 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex flex-col items-center text-center">
+                {network.logo_url ? (
+                  <img
+                    src={network.logo_url}
+                    alt={network.short_name}
+                    className="w-12 h-12 object-contain mb-2"
+                  />
+                ) : (
+                  <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center mb-2">
+                    <span className="text-sm font-bold text-gray-400">
+                      {network.short_name.charAt(0)}
+                    </span>
+                  </div>
+                )}
+                <p className="text-sm font-medium text-gray-900 truncate w-full">
+                  {network.short_name}
+                </p>
+                <p className="text-xs text-gray-500 truncate w-full mb-2">
+                  {network.long_name}
+                </p>
+                <div className="flex space-x-2">
                   <button
                     onClick={() => handleEdit(network)}
-                    className="text-blue-600 hover:underline"
+                    className="text-xs text-blue-600 hover:underline"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(network.id)}
-                    className="text-red-600 hover:underline"
+                    className="text-xs text-red-600 hover:underline"
                   >
                     Delete
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
 
-        {networks.length === 0 && (
-          <p className="text-center py-8 text-gray-500">No networks found</p>
+        {filteredNetworks.length === 0 && (
+          <p className="text-center py-8 text-gray-500">
+            {search ? `No networks found matching "${search}"` : 'No networks found'}
+          </p>
         )}
       </div>
 
