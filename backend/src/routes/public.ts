@@ -183,6 +183,7 @@ app.get('/networks/:id', async (c) => {
   }
 
   // Get all substations affiliated with this network, including parent station info
+  // Uses UNION to include both direct station substations and group substations
   const affiliates = await c.env.DB.prepare(`
     SELECT
       sub.id,
@@ -194,17 +195,62 @@ app.get('/networks/:id', async (c) => {
       s.marketing_name as station_marketing_name,
       s.logo_url as station_logo_url,
       s.tma_id,
-      t.name as tma_name
+      t.name as tma_name,
+      0 as is_group_substation
     FROM substations sub
     JOIN stations s ON sub.station_id = s.id
     JOIN tmas t ON s.tma_id = t.id
     WHERE sub.major_network_id = ?
-    ORDER BY t.name, s.station_number
-  `).bind(id).all();
+
+    UNION ALL
+
+    SELECT
+      sub.id,
+      sub.number,
+      sub.marketing_name,
+      s.id as station_id,
+      s.callsign as station_callsign,
+      s.station_number,
+      s.marketing_name as station_marketing_name,
+      s.logo_url as station_logo_url,
+      s.tma_id,
+      t.name as tma_name,
+      1 as is_group_substation
+    FROM substations sub
+    JOIN station_groups sg ON sub.station_group_id = sg.id
+    JOIN stations s ON s.station_group_id = sg.id
+    JOIN tmas t ON s.tma_id = t.id
+    WHERE sub.major_network_id = ?
+
+    ORDER BY tma_name, station_number
+  `).bind(id, id).all<{
+    id: number;
+    number: number;
+    marketing_name: string;
+    station_id: number;
+    station_callsign: string;
+    station_number: number;
+    station_marketing_name: string;
+    station_logo_url: string | null;
+    tma_id: number;
+    tma_name: string;
+    is_group_substation: number;
+  }>();
+
+  // Process group substations to replace callsign placeholders
+  const processedAffiliates = affiliates.results.map(affiliate => {
+    if (affiliate.is_group_substation) {
+      return {
+        ...affiliate,
+        marketing_name: replaceCallsignPlaceholders(affiliate.marketing_name, affiliate.station_callsign),
+      };
+    }
+    return affiliate;
+  });
 
   return c.json({
     ...network,
-    affiliates: affiliates.results,
+    affiliates: processedAffiliates,
   });
 });
 
