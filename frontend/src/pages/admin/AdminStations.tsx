@@ -341,11 +341,27 @@ export function AdminStations() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className={`bg-white rounded-lg shadow-sm overflow-hidden ${selectedStation ? 'block' : 'hidden lg:block'}`}>
           <div className="p-4 border-b flex justify-between items-center">
-            <h2 className="font-semibold">
-              {selectedStation ? `Substations for Ch. ${selectedStation.station_number}` : 'Select a station'}
-            </h2>
+            <div className="flex items-center space-x-2">
+              {selectedStation && (
+                <button
+                  onClick={() => {
+                    setSelectedStation(null);
+                    setStationIdParam(null);
+                  }}
+                  className="lg:hidden p-1 text-gray-500 hover:text-gray-700"
+                  aria-label="Back to stations"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              )}
+              <h2 className="font-semibold">
+                {selectedStation ? `Substations for Ch. ${selectedStation.station_number}` : 'Select a station'}
+              </h2>
+            </div>
             {selectedStation && (
               <button
                 onClick={handleAddSubstation}
@@ -406,8 +422,8 @@ export function AdminStations() {
 
       {/* Station Modal */}
       {showStationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">
               {editingStation ? 'Edit Station' : 'Add Station'}
             </h2>
@@ -506,8 +522,8 @@ export function AdminStations() {
 
       {/* Substation Modal */}
       {showSubstationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">
               {editingSubstation ? 'Edit Substation' : 'Add Substation'}
             </h2>

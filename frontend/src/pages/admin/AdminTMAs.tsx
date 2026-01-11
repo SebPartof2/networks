@@ -71,7 +71,7 @@ export function AdminTMAs() {
         <p className="text-gray-600">Update the implementation status of Television Market Areas</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-2xl font-bold text-green-700">{statusCounts.complete}</p>
           <p className="text-sm text-green-600">Complete</p>
@@ -94,7 +94,7 @@ export function AdminTMAs() {
         />
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>

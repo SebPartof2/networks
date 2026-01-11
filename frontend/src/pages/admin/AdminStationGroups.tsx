@@ -250,11 +250,24 @@ export function AdminStationGroups() {
         </div>
 
         {/* Group Details */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className={`bg-white rounded-lg shadow-sm overflow-hidden ${selectedGroup ? 'block' : 'hidden lg:block'}`}>
           <div className="bg-gray-50 px-4 py-3 border-b">
-            <h2 className="font-semibold text-gray-700">
-              {selectedGroup ? selectedGroup.name : 'Select a group'}
-            </h2>
+            <div className="flex items-center space-x-2">
+              {selectedGroup && (
+                <button
+                  onClick={() => setSelectedGroup(null)}
+                  className="lg:hidden p-1 text-gray-500 hover:text-gray-700"
+                  aria-label="Back to groups"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              )}
+              <h2 className="font-semibold text-gray-700">
+                {selectedGroup ? selectedGroup.name : 'Select a group'}
+              </h2>
+            </div>
           </div>
 
           {loadingDetail ? (
@@ -346,8 +359,8 @@ export function AdminStationGroups() {
 
       {/* Station Group Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">
               {editing ? 'Edit Station Group' : 'Add Station Group'}
             </h2>
@@ -398,8 +411,8 @@ export function AdminStationGroups() {
 
       {/* Substation Modal */}
       {showSubstationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Add Shared Substation</h2>
             <form onSubmit={handleSubmitSubstation}>
               <div className="space-y-4">

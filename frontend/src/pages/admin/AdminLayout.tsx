@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
@@ -9,6 +10,7 @@ interface AdminLayoutProps {
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { isAdmin, isLoading, isAuthenticated } = useAuth();
   const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -49,12 +51,43 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)]">
-      <aside className="w-64 bg-white shadow-sm">
-        <nav className="p-4 space-y-1">
+      {/* Mobile menu button */}
+      <div className="lg:hidden fixed bottom-4 right-4 z-50">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {sidebarOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+      </div>
+
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 z-40
+        w-64 bg-white shadow-sm
+        transform transition-transform duration-200 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <nav className="p-4 space-y-1 mt-16 lg:mt-0">
           {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
+              onClick={() => setSidebarOpen(false)}
               className={`flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium ${
                 isActive(item.path)
                   ? 'bg-blue-100 text-blue-700'
@@ -70,7 +103,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </nav>
       </aside>
 
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-4 lg:p-6 w-full lg:w-auto">
         {children}
       </main>
     </div>
